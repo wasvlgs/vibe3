@@ -27,7 +27,7 @@
                             <div class="flex space-x-2 overflow-x-auto pb-2">
                                 @for ($i = 1; $i <= 8; $i++)
                                     <div class="flex flex-col items-center">
-                                        <div class="relative">
+                                        <div class="relative min-w-12">
                                             <img src="{{ asset('uploads/cover_picture/none.png') }}" class="w-12 h-12 rounded-full" alt="Friend {{$i}}">
                                             <div class="absolute bottom-0 right-0 w-3 h-3 bg-green-500 rounded-full border-2 border-white"></div>
                                         </div>

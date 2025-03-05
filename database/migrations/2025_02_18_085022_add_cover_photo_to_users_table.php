@@ -14,7 +14,7 @@ return new class extends Migration
     public function up()
     {
         Schema::table('users', function (Blueprint $table) {
-            $table->string('coverPhotoPath')->nullable();
+            $table->string('cover_photo')->nullable();
         });
     }
 

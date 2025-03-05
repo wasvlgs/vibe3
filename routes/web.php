@@ -29,9 +29,12 @@ Route::get('/dashboard',[DashboardController::class, 'index'])
 Route::get('/friends',[DashboardController::class, 'friends'])
     ->middleware(['auth', 'verified'])
     ->name('friends');
-Route::get('/requests',[DashboardController::class, 'requests'])
-    ->middleware(['auth', 'verified'])
-    ->name('requests');
+// Route::get('/chats',[DashboardController::class, 'chats'])
+//     ->middleware(['auth', 'verified'])
+//     ->name('chats');
+Route::get('chats',function (){
+    return view('chat');
+})->name('chats');
 
 
 Route::middleware('auth')->group(function () {
