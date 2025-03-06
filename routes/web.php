@@ -49,9 +49,9 @@ Route::post('/addFriend', [AmiController::class, 'store'])
     ->name('ami.envoyer');
 Route::put('/ami/accepter/{id}', [AmiController::class, 'accepter'])->middleware(['auth', 'verified'])->name('ami.accepter');
 Route::delete('/ami/annuler/{id}', [AmiController::class, 'annuler'])->middleware(['auth', 'verified'])->name('ami.annuler');
-Route::post('/broadcasting/auth', function (Illuminate\Http\Request $request) {
-    return Broadcast::auth($request);
-});
+//Route::post('/broadcasting/auth', function (Illuminate\Http\Request $request) {
+//    return Broadcast::auth($request);
+//});
 Route::post('/posts', [PostController::class, 'store'])->middleware(['auth','verified'])->name('posts.store');
 Route::put('/post/{post}', [PostController::class, 'update'])->middleware(['auth','verified'])->name('posts.edit');
 Route::get('/profile/{user:pseudo}', [ProfileController::class, 'show'])->middleware(['auth','verified'])->name('profile');
@@ -66,6 +66,11 @@ Route::middleware('web')->group(function () {
     Route::get('login/google', [SocialiteController::class, 'redirectToGoogle'])->name('login.google');
     Route::get('login/google/callback', [SocialiteController::class, 'handleGoogleCallback']);
 });
+
+Broadcast::channel('test-channel', function () {
+    return true;
+});
+
 
 require __DIR__.'/auth.php';
 
