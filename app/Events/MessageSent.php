@@ -5,13 +5,13 @@ namespace App\Events;
 use App\Models\Message;
 use Illuminate\Broadcasting\Channel;
 use Illuminate\Broadcasting\InteractsWithSockets;
-use Illuminate\Broadcasting\PresenceChannel;
-use Illuminate\Broadcasting\BroadcastEvent;
+use Illuminate\Contracts\Broadcasting\ShouldBroadcast;
+use Illuminate\Foundation\Events\Dispatchable;
 use Illuminate\Queue\SerializesModels;
 
-class MessageSent extends BroadcastEvent
+class MessageSent implements ShouldBroadcast
 {
-    use InteractsWithSockets, SerializesModels;
+    use Dispatchable, InteractsWithSockets, SerializesModels;
 
     public $message;
 
@@ -22,11 +22,12 @@ class MessageSent extends BroadcastEvent
 
     public function broadcastOn()
     {
-        return new Channel('private-chat.' . $this->message->conversation_id);
+        return new Channel('chatify.' . $this->message->to_id); // Broadcasting to private channel for the recipient
     }
 
     public function broadcastAs()
     {
-        return 'MessageSent';
+        return 'MessageSent'; // The event name
     }
 }
+

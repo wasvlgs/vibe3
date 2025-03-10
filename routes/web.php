@@ -101,3 +101,6 @@ Route::get('/online-users', function () {
     return response()->json($onlineUsers);
 })->name('online.users');
 
+
+
+Route::post('/send-message', [ChatController::class, 'send'])->name('chatify.send');

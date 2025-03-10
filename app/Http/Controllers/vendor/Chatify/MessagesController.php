@@ -2,18 +2,20 @@
 
 namespace Chatify\Http\Controllers;
 
-use Illuminate\Http\JsonResponse;
-use Illuminate\Http\Request;
-use Illuminate\Routing\Controller;
-use Illuminate\Support\Facades\Response;
 use App\Models\User;
-use App\Models\ChMessage as Message;
-use App\Models\ChFavorite as Favorite;
-use Chatify\Facades\ChatifyMessenger as Chatify;
-use Illuminate\Support\Facades\Auth;
-use Illuminate\Support\Facades\DB;
-use Illuminate\Support\Facades\Request as FacadesRequest;
+use App\Events\MessageSent;
 use Illuminate\Support\Str;
+use Illuminate\Http\Request;
+use Illuminate\Http\JsonResponse;
+use Illuminate\Routing\Controller;
+use Illuminate\Support\Facades\DB;
+use App\Models\ChMessage as Message;
+use Illuminate\Support\Facades\Auth;
+use App\Models\ChFavorite as Favorite;
+use Illuminate\Support\Facades\Response;
+use Chatify\Facades\ChatifyMessenger as Chatify;
+use Illuminate\Support\Facades\Request as FacadesRequest;
+
 class MessagesController extends Controller
 {
     protected $perPage = 30;
@@ -95,7 +97,7 @@ class MessagesController extends Controller
      */
     public function send(Request $request)
     {
-        // default variables
+        // Default variables
         $error = (object)[
             'status' => 0,
             'message' => null
@@ -104,25 +106,27 @@ class MessagesController extends Controller
         $attachment_title = null;
         $attachment_url = null;
     
-        // if there is attachment [file]
+        // Check if there is an attachment [file]
         if ($request->hasFile('file')) {
-            // allowed extensions
+            // Allowed extensions
             $allowed_images = Chatify::getAllowedImages();
             $allowed_files  = Chatify::getAllowedFiles();
             $allowed        = array_merge($allowed_images, $allowed_files);
     
             $file = $request->file('file');
-            // check file size
+    
+            // Check file size
             if ($file->getSize() < Chatify::getMaxUploadSize()) {
                 if (in_array(strtolower($file->extension()), $allowed)) {
-                    // get attachment name
+                    // Get attachment name
                     $attachment_title = $file->getClientOriginalName();
-                    // upload attachment and store the new name in the public disk
+    
+                    // Upload attachment and store in public storage
                     $attachment = Str::uuid() . "." . $file->extension();
                     $file->storeAs('public/attachments', $attachment); // Store in public directory
-                    
-                    // Generate the public URL for the file (image or other)
-                    $attachment_url = asset('storage/attachments/' . $attachment); // Using the public storage URL
+    
+                    // Generate the public URL for the file
+                    $attachment_url = asset('storage/attachments/' . $attachment);
                 } else {
                     $error->status = 1;
                     $error->message = "File extension not allowed!";
@@ -133,20 +137,31 @@ class MessagesController extends Controller
             }
         }
     
+        // Check if the message is a location
+        $messageBody = htmlentities(trim($request->message), ENT_QUOTES, 'UTF-8');
+        
+        // Handle location message
+        if ($request->has('location')) {
+            $lat = $request->input('location.latitude');
+            $lon = $request->input('location.longitude');
+            $messageBody = "https://www.google.com/maps?q={$lat},{$lon}";
+        }
+    
         if (!$error->status) {
             // Create the message object
             $message = Chatify::newMessage([
                 'from_id' => Auth::user()->id,
                 'to_id' => $request['id'],
-                'body' => htmlentities(trim($request['message']), ENT_QUOTES, 'UTF-8'),
+                'body' => $messageBody,
                 'attachment' => ($attachment_url) ? json_encode((object)[
-                    'new_name' => $attachment_url, // Attach the URL of the image/file
+                    'new_name' => $attachment_url,
                     'old_name' => htmlentities(trim($attachment_title), ENT_QUOTES, 'UTF-8'),
                 ]) : null,
             ]);
     
             $messageData = Chatify::parseMessage($message);
     
+            // Send real-time notification to recipient
             if (Auth::user()->id != $request['id']) {
                 Chatify::push("private-chatify." . $request['id'], 'messaging', [
                     'from_id' => Auth::user()->id,
@@ -154,9 +169,12 @@ class MessagesController extends Controller
                     'message' => Chatify::messageCard($messageData, true)
                 ]);
             }
+    
+            // Event should be triggered after the message is saved and response is sent
+            event(new MessageSent($message)); // Broadcast event to notify the recipient
         }
     
-        // send the response
+        // Send response
         return Response::json([
             'status' => '200',
             'error' => $error,
@@ -164,6 +182,10 @@ class MessagesController extends Controller
             'tempID' => $request['temporaryMsgId'],
         ]);
     }
+    
+    
+    
+    
     
 
     /**

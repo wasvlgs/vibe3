@@ -1,5 +1,16 @@
 @include('Chatify::layouts.headLinks')
 <div class="messenger">
+
+    <!-- Notification Alert -->
+    <div id="notification" class="fixed top-0 left-1/2 transform -translate-x-1/2 bg-green-500 text-white py-2 px-4 rounded-lg shadow-lg hidden">
+        <div class="flex items-center justify-between">
+            <span id="notification-message" class="text-sm font-semibold"></span>
+            <button id="close-notification" class="ml-3 text-white hover:text-gray-200">
+                <i class="fas fa-times"></i>
+            </button>
+        </div>
+    </div>
+
     {{-- ----------------------Users/Groups lists side---------------------- --}}
     <div class="messenger-listView {{ !!$id ? 'conversation-active' : '' }}">
         {{-- Header and search bar --}}
@@ -110,3 +121,38 @@
 
 @include('Chatify::layouts.modals')
 @include('Chatify::layouts.footerLinks')
+
+<script>
+    // Make sure you replace `userId` and `currentUserId` dynamically from your backend
+    var userId = {{ auth()->user()->id }}; // dynamically add user ID from the backend
+    var currentUserId = {{ auth()->user()->id }}; // for checking if the message is for the current user
+    
+    // Listen for the 'MessageSent' event using Laravel Echo
+    Echo.private('chatify.' + userId)
+        .listen('MessageSent', (event) => {
+            // Check if the message is for the current user
+            if (event.message.to_id === currentUserId) {
+                showNotification(`New message from ${event.sender.name}`);
+            }
+        });
+    
+    // Function to display the notification
+    function showNotification(message) {
+        const notification = document.getElementById('notification');
+        const messageElement = document.getElementById('notification-message');
+        const closeButton = document.getElementById('close-notification');
+        
+        messageElement.textContent = message; // Set the message text
+        notification.classList.remove('hidden'); // Show the notification
+        
+        // Close the notification when the close button is clicked
+        closeButton.addEventListener('click', function () {
+            notification.classList.add('hidden');
+        });
+    
+        // Automatically hide the notification after 5 seconds
+        setTimeout(function () {
+            notification.classList.add('hidden');
+        }, 5000);
+    }
+    </script>
